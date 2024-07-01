@@ -37,7 +37,7 @@ class DutyScheduler:
     new_end = self.end_date + datetime.timedelta(days=1)
     new_end_date = new_end.strftime('%Y-%m-%d')
     # may want to incorporate excluding custom holidays, or can just do that in separate function
-    total_weekdays = numpy.busday_count(self.start_date.strftime('%Y-%m-%d'), new_end_date, weekmask = ' Sun Mon Tue Wed Thu')
+    total_weekdays = numpy.busday_count(self.start_date.strftime('%Y-%m-%d'), new_end_date, weekmask = 'Sun Mon Tue Wed Thu')
     return total_weekdays
 
   def weekday_shifts(self) -> int:
