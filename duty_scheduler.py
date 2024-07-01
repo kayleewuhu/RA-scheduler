@@ -1,5 +1,6 @@
 import datetime
 import numpy
+from ortools.sat.python import cp_model
 
 class DutyScheduler:
   '''
@@ -78,3 +79,22 @@ class DutyScheduler:
     '''
     weekends = self.total_weekends()
     return weekends * self.people_per_shift_weekend
+
+  def total_points(self) -> int:
+    '''
+    Calculates total number of points
+      - weekdays are 1 point
+      - weekends are 2 points
+      - holidays are 3 points ( unhandled )
+
+    Parameters: None
+
+    Returns:
+      total number of points
+    '''
+    weekday_points = self.weekday_shifts() * 1
+    weekend_points = self.weekend_shifts() * 2
+    return weekday_points + weekend_points
+  
+  def create_or_model(self) -> None:
+    model = cp_model.CpModel()
