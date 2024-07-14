@@ -4,13 +4,13 @@ from enum import Enum
 
 
 class DaysOfWeek(Enum):
-    MONDAY = 1
-    TUESDAY = 2
-    WEDNESDAY = 3
-    THURSDAY = 4
-    FRIDAY = 5
-    SATURDAY = 6
-    SUNDAY = 7
+    MONDAY = "Mon"
+    TUESDAY = "Tues"
+    WEDNESDAY = "Wed"
+    THURSDAY = "Thurs"
+    FRIDAY = "Fri"
+    SATURDAY = "Sat"
+    SUNDAY = "Sun"
 
 
 class Distribution(Enum):
