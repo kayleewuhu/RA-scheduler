@@ -1,5 +1,5 @@
 from duty_scheduler import DutyScheduler
-from ra_availabilities import RaAvailability, DaysOfWeek, Distribution
+from ra_models import RaAvailability, DaysOfWeek, Distribution
 from datetime import date
 
 if __name__ == '__main__':
@@ -29,8 +29,9 @@ if __name__ == '__main__':
          RaAvailability("Derquan", [date(2024, 3, 29), date(2024, 3, 30), date(2024, 3, 31)], [DaysOfWeek.WEDNESDAY, DaysOfWeek.SATURDAY]),
          RaAvailability("Elizabeth", [date(2024, 1, 13), date(2024, 1, 14), date(2024, 1, 15), date(2024, 3, 17), date(2024, 3, 29), date(2024, 3, 30), date(2024, 3, 31)], [DaysOfWeek.THURSDAY]),
          RaAvailability("McKayla")]
-  test = DutyScheduler('2024-01-02', '2024-05-06', 1, 2, ras)
+  test = DutyScheduler('2024-01-02', '2024-05-06', ras)
   test.create_or_model()
+  #print(test.create_day_array())
   #print(test.all_dates_of_all_days())
   # weekdays = test.total_weekdays()
   # weekends = test.total_weekends()

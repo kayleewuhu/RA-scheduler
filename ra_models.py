@@ -1,22 +1,6 @@
 from datetime import date
 from typing import List
-from enum import Enum
-
-
-class DaysOfWeek(Enum):
-    MONDAY = "Mon"
-    TUESDAY = "Tues"
-    WEDNESDAY = "Wed"
-    THURSDAY = "Thurs"
-    FRIDAY = "Fri"
-    SATURDAY = "Sat"
-    SUNDAY = "Sun"
-
-
-class Distribution(Enum):
-    FRONTLOAD = 0
-    BACKLOAD = 1
-
+from constants import DaysOfWeek, Distribution
 
 class RaAvailability:
     '''
@@ -28,7 +12,7 @@ class RaAvailability:
     '''
 
     def __init__(self, name: str = "", no_dates: List[date] = [],
-                 no_days: List[DaysOfWeek] = [], pref_no_days: List[DaysOfWeek] = [],
+                 no_days: List[DaysOfWeek] = [],
                  pref_days: List[str] = [], distribution: Distribution = 0,
                  pref_no_ppl: List[str] = [], pref_ppl: List[str] = []) -> None:
         '''
@@ -47,11 +31,32 @@ class RaAvailability:
 
         '''
         self.name = name
-        #self.id = id
+        # self.id = id
         self.no_dates = no_dates
         self.no_days = no_days
-        self.pref_no_days = pref_no_days
+        # self.pref_no_days = pref_no_days
         self.pref_days = pref_days
         self.distribution = distribution
         self.pref_no_ppl = pref_no_ppl
         self.pref_ppl = pref_ppl
+
+
+class Ra:
+    '''
+    Represents an RA 
+    '''
+
+    def __init__(self, name: str = '', points: int = 0, half_staff: bool = False) -> None:
+        self.name = name
+        self.pts = points
+        self.half_staff = half_staff
+
+
+class Holidays:
+    '''
+    Represents a holiday
+    '''
+    def __init__(self, double_len: List[date], breaks: List[date], hard_shifts: List[date]) -> None:
+        self.double_len = double_len
+        self.breaks = breaks
+        self.hard_shifts = hard_shifts
