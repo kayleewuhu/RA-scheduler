@@ -28,7 +28,8 @@ if __name__ == '__main__':
          RaAvailability("Karena"),
          RaAvailability("Derquan", [date(2024, 3, 29), date(2024, 3, 30), date(2024, 3, 31)], [DaysOfWeek.WEDNESDAY, DaysOfWeek.SATURDAY]),
          RaAvailability("Elizabeth", [date(2024, 1, 13), date(2024, 1, 14), date(2024, 1, 15), date(2024, 3, 17), date(2024, 3, 29), date(2024, 3, 30), date(2024, 3, 31)], [DaysOfWeek.THURSDAY]),
-         RaAvailability("McKayla")]
+         RaAvailability("McKayla"),
+         RaAvailability("Joshie")]
   test = DutyScheduler('2024-01-02', '2024-05-06', ras)
   test.create_or_model()
   #print(test.create_day_array())

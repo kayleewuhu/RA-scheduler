@@ -1,8 +1,11 @@
 class DutyFormParser:
-  '''
-  Parses responses from the duty form
+    '''
+    Parses responses from the duty form
 
-  Attributes:
+    Attributes:
 
-  Methods:
-  '''
+    Methods:
+    '''
+
+    def __init__(self, forms_link: str = "") -> None:
+        self.forms_link = forms_link

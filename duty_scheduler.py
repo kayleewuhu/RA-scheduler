@@ -1,9 +1,8 @@
 from datetime import datetime, date, timedelta
-from typing import List
 from ra_models import DaysOfWeek, Holidays
 from ortools.sat.python import cp_model
 from day import Day
-from constants import DAYS_OF_WEEK, Semester
+from constants import DAYS_OF_WEEK, Semester, WEEKENDS, CONSTANTS
 from ra_models import RaAvailability, Ra
 
 
@@ -16,8 +15,8 @@ class DutyScheduler:
     Methods:
     '''
 
-    def __init__(self, start_date: str, end_date: str, ra_availabilities: List[RaAvailability],
-                 holidays: Holidays = None) -> None:
+    def __init__(self, start_date: str, end_date: str, ra_availabilities: list[RaAvailability],
+                 holidays: Holidays = Holidays(), half_staff: list[str] = []) -> None:
         '''
         Initializes attributes
 
@@ -34,7 +33,7 @@ class DutyScheduler:
         day_dict_pts = self.create_day_dict()
         self.day_dict = day_dict_pts[0]
         self.total_pts = day_dict_pts[1]
-        # self.half_staff =
+        self.half_staff = half_staff
         self.holidays = holidays
 
     def determine_semester_season(self) -> Semester:
@@ -58,7 +57,7 @@ class DutyScheduler:
 
     def create_day_dict(self) -> tuple[dict[date, Day], int]:
         '''
-        Creates a dictionary of information for every single day from start_date to end_date 
+        Creates a dictionary of information for every single day from start_date to end_date
         and calculates total points, excluding special cases or holidays
 
         Parameters: None
@@ -82,146 +81,77 @@ class DutyScheduler:
 
         return days, total_pts
 
-    # def revise_total_pts(self) -> None:
-    #     '''
-    #     Handles special case day points (holidays) and
-    #     evens out the total number of points so that all RAs can have an equal amount of points
+    def revise_total_pts(self) -> None:
+        '''
+        Handles special case day points (holidays) and
+        evens out the total number of points so that all RAs can have an equal amount of points
 
-    #     Parameters: None
+        Parameters: None
 
-    #     Returns: None
-    #     '''
-    #     # handles all mandatory holidays that make previous day 24 hour shift
-    #     for holiday in self.holidays.double_len:
-    #         prev_shift = self.day_dict[holiday - timedelta(days=1)]
-    #         prev_shift.add_pts(1)
-    #         self.total_pts += prev_shift.ppl
+        Returns: None
+        '''
+        # handles all mandatory holidays that make previous day 24 hour shift
+        for holiday in self.holidays.double_len:
+            prev_shift = self.day_dict[holiday - timedelta(days=1)]
+            prev_shift.add_pts(1)
+            self.total_pts += prev_shift.ppl
 
-    #     # handles breaks (including the surrounding weekends)
-    #     for holiday in self.holidays.breaks:
-    #         # Thanksgiving
-    #         if self.semester_type == Semester.FALL:
-    #             shift = self.day_dict[holiday]
-    #         elif self.semester_type == Semester.SPRING:
-    #             shift
+        # handles breaks (including the surrounding weekends)
+        # Thanksgiving: assume the dates given are Wednesday - Sunday
+        # add point to Tuesday before
+        if self.semester_type == Semester.FALL:
+            self.holidays.add_previous_day()
+            for holiday in self.holidays.breaks:
+                day = self.day_dict[holiday]
+                if (day.day_of_week == DaysOfWeek.SUNDAY or 
+                    day.day_of_week == DaysOfWeek.TUESDAY or 
+                    day.day_of_week in WEEKENDS):
+                    pt_increase = 1
+                else:
+                    pt_increase = 2
+                day.add_pts(pt_increase)
+                self.total_pts += pt_increase * day.ppl
+        # Spring break: assume the dates given are Saturday - Sunday (1 week + 1 day)
+        # add point to Friday before
+        elif self.semester_type == Semester.SPRING:
+            self.holidays.add_previous_day()
+            for holiday in self.holidays.breaks:
+                day = self.day_dict[holiday]
+                day.add_pts(1)
+                self.total_pts += day.ppl
 
-    #     while (self.total_pts) % len(self.ra_availabilities) != 0:
+        # fill in points with difficult shifts to make an even total
+        # pts_needed = self.total_pts % len(self.ra_availabilities)
+        # possible_pts = self.total_optional_pts()
+        # if possible_pts >= pts_needed:
+        #     for shift in self.holidays.hard_shifts:
+        #         if pts_needed == 0:
+        #             return 
+        #         if pts_needed == 1:
+                    
+        #         day = self.day_dict[shift]
+        #         day.add_pts(1)
+        #         self.total_pts += day.ppl
+        #         pts_needed -= day.ppl
 
-        # def total_weekdays(self) -> int:
-        #     '''
-        #     Calculate total weekdays for the time period
+    def total_optional_pts(self) -> int:
+        total_pts = 0
+        for shift in (self.holidays.hard_shifts):
+            shift_details = self.day_dict[shift]
+            day = shift_details.day_of_week
+            
+            if day in WEEKENDS:
+                total_pts += CONSTANTS.PPL_PER_SHIFT_WEEKEND
+            else:
+                total_pts += CONSTANTS.PPL_PER_SHIFT_WEEKDAY
+        return total_pts
 
-        #     Parameters: None
-
-        #     Returns:
-        #       total number of weekdays
-        #     '''
-        #     new_end = self.end_date + timedelta(days=1)
-        #     new_end_date = new_end.strftime('%Y-%m-%d')
-        #     # may want to incorporate excluding custom holidays, or can just do that in separate function
-        #     total_weekdays = numpy.busday_count(self.start_date.strftime(
-        #         '%Y-%m-%d'), new_end_date, weekmask='Sun Mon Tue Wed Thu')
-        #     return total_weekdays
-
-        # def weekday_shifts(self) -> int:
-        #     '''
-        #     Calculates total number of weekday shifts
-
-        #     Parameters: None
-
-        #     Returns:
-        #       total number of weekday shifts
-        #     '''
-        #     weekdays = self.total_weekdays()
-        #     return weekdays * self.people_per_shift_weekday
-
-        # def total_weekends(self) -> int:
-        #     '''
-        #     Calculate total weekend days for the time period
-
-        #     Parameters: None
-
-        #     Returns:
-        #       total number of weekend days
-        #     '''
-        #     new_end = self.end_date + timedelta(days=1)
-        #     new_end_date = new_end.strftime('%Y-%m-%d')
-        #     # may want to incorporate excluding custom holidays, or can just do that in separate function
-        #     total_weekends = numpy.busday_count(self.start_date.strftime(
-        #         '%Y-%m-%d'), new_end_date, weekmask='Fri Sat')
-        #     return total_weekends
-
-        # def weekend_shifts(self) -> int:
-        #     '''
-        #     Calculates total number of weekend shifts
-
-        #     Parameters: None
-
-        #     Returns:
-        #       total number of weekend shifts
-        #     '''
-        #     weekends = self.total_weekends()
-        #     return weekends * self.people_per_shift_weekend
-
-    # def first_date_of_day(self, day: DaysOfWeek) -> date:
-    #     '''
-    #     Returns the date of the first occurrence of the given day of the week in the timeframe
-
-    #     Parameters:
-    #       day - day of the week
-
-    #     Returns:
-    #       the date of the first occurrence of the day
-    #     '''
-    #     start_day_idx = self.start_date.weekday()
-    #     first_day_occurrence_idx = DAYS_OF_WEEK.index(day)
-    #     num_days_btwn = abs(first_day_occurrence_idx - start_day_idx)
-    #     if (start_day_idx > first_day_occurrence_idx):
-    #         num_days_btwn = len(DAYS_OF_WEEK) - num_days_btwn
-    #     first_day_date = self.start_date + timedelta(days=num_days_btwn)
-
-    #     return first_day_date
-
-    # def calculate_dates_of_day(self, day: DaysOfWeek) -> List[date]:
-    #     '''
-    #     Returns all dates that fall on the given day of the week within the timeframe
-
-    #     Parameters:
-    #       day - the day of the week
-
-    #     Returns:
-    #       list of dates
-    #     '''
-    #     day_date = self.first_date_of_day(day)
-    #     all_day_dates = []
-
-    #     while day_date <= self.end_date:
-    #         all_day_dates.append(day_date)
-    #         day_date = day_date + timedelta(days=7)
-
-    #     return all_day_dates
-
-    # def all_dates_of_all_days(self) -> dict:
-    #     '''
-    #     Returns a dictionary with all the dates each day of the week falls on
-
-    #     Parameters: None
-
-    #     Returns:
-    #       dictionary containing all the dates for each day 
-    #     '''
-    #     all_days = {}
-    #     for day_name in DAYS_OF_WEEK:
-    #         all_dates = self.calculate_dates_of_day(day_name)
-    #         all_days[day_name] = all_dates
-    #     return all_days
-
-    def no_days_for_all_ras(self, ras: List[Ra]) -> dict[DaysOfWeek, List[Ra]]:
+    def no_days_for_all_ras(self, ras: list[Ra]) -> dict[DaysOfWeek, list[Ra]]:
         '''
         Creates a dict that assigns every day of the week with a list of RAs that cannot work that day
 
         Parameters:
-          ras - a list of RA objects 
+          ras - a list of RA objects
 
         Returns:
           a dictionary that with all the RAs that cannot work each day of the week
@@ -234,19 +164,22 @@ class DutyScheduler:
                 no_days_for_ras[day].append(ra)
         return no_days_for_ras
 
-    def create_ras(self) -> List[Ra]:
+    def create_ras(self) -> list[Ra]:
         '''
         Creates a list of RA objects from RA Availability objects
 
         Parameters: None
 
-        Returns: 
+        Returns:
           a list of RA objects that correspond with the RA availabilities
           (the availabilities are what is INPUT into the program, the list of RA objects will be the OUTPUT)
         '''
         ras = []
         for person in self.ra_availabilities:
-            ras.append(Ra(person.name))
+            if person.name in self.half_staff:
+                ras.append(Ra(person.name, half_staff=True))
+            else:
+                ras.append(Ra(person.name))
         return ras
 
     def create_or_model(self) -> None:
@@ -268,7 +201,7 @@ class DutyScheduler:
                     assignments[(availability, day, shift)] = model.new_bool_var(
                         (f"assignment_ra{availability}_date{day}_shift{shift}"))
 
-        # adding constraints
+        # adding hard constraints
         # exactly 1 RA per shift
         for day in all_days:
             for shift in range(day.ppl):
@@ -298,8 +231,6 @@ class DutyScheduler:
                         assignments[(availability, day, shift)] * day.pts)
             model.add(min_pts_per_ra <= sum(pts_earned))
             model.add(sum(pts_earned) <= max_pts_per_ra)
-        # print(min_shifts_per_ra)
-        # print(max_shifts_per_ra)
 
         # dates that cannot be done
         for availability, ra in zip(self.ra_availabilities, all_ras):
@@ -317,6 +248,44 @@ class DutyScheduler:
                 for shift in range(day.ppl):
                     model.add(assignments[(ra, day, shift)] == 0)
 
+        # new RAs cannot be on duty for the first 3 weeks (to account for shadow shifts)
+        # new RAs to the community (but returners) cannot be on duty for the first 1.5 weeks
+        for day_idx, day in zip(range(21), all_days):
+            for ra in all_ras:
+                if not ra.returner or (not ra.community_returner and day_idx <= 11):
+                    for shift in range(day.ppl):
+                        model.add(assignments[(ra, day, shift)] == 0)
+
+        # only people on half staff can be on duty during break
+        for date in self.holidays.breaks:
+            day = self.day_dict[date]
+            for ra in all_ras:
+                if not ra.half_staff:
+                    for shift in range(day.ppl):
+                        model.add(assignments[(ra, day, shift)] == 0)
+              
+                  
+        # adding soft constraints
+        # penalty_bool_vars = []
+        # penalty_bool_coeff = []
+
+        # penalty = 10
+        # for availability, ra in zip(self.ra_availabilities, all_ras):
+        #     for day in all_days:
+        #         for other_ra in availability.pref_no_ppl:
+        #             penalty_var = model.NewBoolVar(f"penalty_ra1_ra2_day{day}")
+        #             model.AddBoolOr([
+        #                 penalty_var,
+        #                 bool(sum(assignments[(ra, day, shift)]
+        #                      for shift in range(day.ppl))),
+        #                 bool(sum(assignments[(all_ras_dict[other_ra], day, shift)] for shift in range(day.ppl)))])
+        #             penalty_bool_vars.append(penalty_var)
+        #             penalty_bool_coeff.append(penalty)
+
+        # Define the objective to minimize the total penalty
+        # model.Minimize(sum(
+        #     penalty_bool_vars[i] * penalty_bool_coeffs[i] for i in range(len(penalty_bool_vars))))
+
         solver = cp_model.CpSolver()
         status = solver.solve(model)
         print(status)
@@ -325,13 +294,13 @@ class DutyScheduler:
             print('Solution found')
         # Print solution details if needed
             for d in all_days:
-              print(f"Date: {d.date}, Day: {d.day_of_week}")
-              for e in all_ras:
-                  for s in range(d.ppl):
-                    if solver.Value(assignments[e, d, s]):
-                        e.pts += d.pts
-                        print(f"  RA {e.name} works shift {s}")
-            
+                print(f"Date: {d.date}, Day: {d.day_of_week}, Pts: {d.pts}")
+                for e in all_ras:
+                    for s in range(d.ppl):
+                        if solver.Value(assignments[e, d, s]):
+                            e.pts += d.pts
+                            print(f"  RA {e.name} works shift {s}")
+
             for e in all_ras:
                 print(f"RA {e.name} has {e.pts} pts")
         else:

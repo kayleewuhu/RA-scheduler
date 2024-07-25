@@ -29,6 +29,7 @@ class Semester(Enum):
 class Distribution(Enum):
     FRONTLOAD = 0
     BACKLOAD = 1
+    NONE = 2
 
 @ dataclass(frozen=True)
 class Constants:
