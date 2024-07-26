@@ -2,7 +2,7 @@ from datetime import datetime, date, timedelta
 from ra_models import DaysOfWeek, Holidays
 from ortools.sat.python import cp_model
 from day import Day
-from constants import DAYS_OF_WEEK, Semester, WEEKENDS, CONSTANTS
+from constants import DAYS_OF_WEEK, Semester, WEEKENDS, Distribution
 from ra_models import RaAvailability, Ra
 
 
@@ -103,9 +103,9 @@ class DutyScheduler:
             self.holidays.add_previous_day()
             for holiday in self.holidays.breaks:
                 day = self.day_dict[holiday]
-                if (day.day_of_week == DaysOfWeek.SUNDAY or 
-                    day.day_of_week == DaysOfWeek.TUESDAY or 
-                    day.day_of_week in WEEKENDS):
+                if (day.day_of_week == DaysOfWeek.SUNDAY or
+                    day.day_of_week == DaysOfWeek.TUESDAY or
+                        day.day_of_week in WEEKENDS):
                     pt_increase = 1
                 else:
                     pt_increase = 2
@@ -119,32 +119,6 @@ class DutyScheduler:
                 day = self.day_dict[holiday]
                 day.add_pts(1)
                 self.total_pts += day.ppl
-
-        # fill in points with difficult shifts to make an even total
-        # pts_needed = self.total_pts % len(self.ra_availabilities)
-        # possible_pts = self.total_optional_pts()
-        # if possible_pts >= pts_needed:
-        #     for shift in self.holidays.hard_shifts:
-        #         if pts_needed == 0:
-        #             return 
-        #         if pts_needed == 1:
-                    
-        #         day = self.day_dict[shift]
-        #         day.add_pts(1)
-        #         self.total_pts += day.ppl
-        #         pts_needed -= day.ppl
-
-    def total_optional_pts(self) -> int:
-        total_pts = 0
-        for shift in (self.holidays.hard_shifts):
-            shift_details = self.day_dict[shift]
-            day = shift_details.day_of_week
-            
-            if day in WEEKENDS:
-                total_pts += CONSTANTS.PPL_PER_SHIFT_WEEKEND
-            else:
-                total_pts += CONSTANTS.PPL_PER_SHIFT_WEEKDAY
-        return total_pts
 
     def no_days_for_all_ras(self, ras: list[Ra]) -> dict[DaysOfWeek, list[Ra]]:
         '''
@@ -190,6 +164,7 @@ class DutyScheduler:
         staff_size = len(self.ra_availabilities)
         all_ras = self.create_ras()
         all_days = self.day_dict.values()
+        total_days = len(all_days)
 
         model = cp_model.CpModel()
 
@@ -263,28 +238,21 @@ class DutyScheduler:
                 if not ra.half_staff:
                     for shift in range(day.ppl):
                         model.add(assignments[(ra, day, shift)] == 0)
-              
-                  
-        # adding soft constraints
-        # penalty_bool_vars = []
-        # penalty_bool_coeff = []
 
-        # penalty = 10
-        # for availability, ra in zip(self.ra_availabilities, all_ras):
-        #     for day in all_days:
-        #         for other_ra in availability.pref_no_ppl:
-        #             penalty_var = model.NewBoolVar(f"penalty_ra1_ra2_day{day}")
-        #             model.AddBoolOr([
-        #                 penalty_var,
-        #                 bool(sum(assignments[(ra, day, shift)]
-        #                      for shift in range(day.ppl))),
-        #                 bool(sum(assignments[(all_ras_dict[other_ra], day, shift)] for shift in range(day.ppl)))])
-        #             penalty_bool_vars.append(penalty_var)
-        #             penalty_bool_coeff.append(penalty)
-
-        # Define the objective to minimize the total penalty
-        # model.Minimize(sum(
-        #     penalty_bool_vars[i] * penalty_bool_coeffs[i] for i in range(len(penalty_bool_vars))))
+        # distribution, frontloading and backloading
+        distribution_reward = 4
+        reward_terms = []
+        for availability, ra in zip(self.ra_availabilities, all_ras):
+            distribution = availability.distribution
+            for day_idx, day in zip(range(total_days), all_days):
+                if (((day_idx < total_days / 2) and (distribution == Distribution.FRONTLOAD)) or
+                        ((day_idx >= total_days / 2) and (distribution == Distribution.BACKLOAD))):
+                    for shift in range(day.ppl):
+                        reward_terms.append(assignments[ra, day, shift] * distribution_reward)
+                else:
+                    for shift in range(day.ppl):
+                        reward_terms.append(assignments[ra, day, shift])
+        model.Maximize(sum(reward_terms))
 
         solver = cp_model.CpSolver()
         status = solver.solve(model)
@@ -303,5 +271,6 @@ class DutyScheduler:
 
             for e in all_ras:
                 print(f"RA {e.name} has {e.pts} pts")
+            print(solver.objective_value)
         else:
             print('No solution found')
