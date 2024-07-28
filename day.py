@@ -1,6 +1,6 @@
 from datetime import date
 from ra_models import DaysOfWeek
-from constants import WEEKENDS, WEEKDAYS, CONSTANTS
+from constants import WEEKENDS, CONSTANTS
 
 class Day:
     '''

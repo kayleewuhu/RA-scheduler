@@ -167,6 +167,7 @@ class DutyScheduler:
         total_days = len(all_days)
 
         model = cp_model.CpModel()
+        self.revise_total_pts()
 
         # creating boolean variables (the assignments)
         assignments = {}
@@ -206,6 +207,15 @@ class DutyScheduler:
                         assignments[(availability, day, shift)] * day.pts)
             model.add(min_pts_per_ra <= sum(pts_earned))
             model.add(sum(pts_earned) <= max_pts_per_ra)
+        
+        # ensure that an RA isn't scheduled to be on duty before they move in
+        for availability, ra in zip(self.ra_availabilities, all_ras):
+            for day in all_days:
+                if (day.date <= availability.move_in_date):
+                    for shift in range(day.ppl):
+                        model.add(assignments[(ra, day, shift)] == 0)
+                else: 
+                    break
 
         # dates that cannot be done
         for availability, ra in zip(self.ra_availabilities, all_ras):
@@ -240,10 +250,19 @@ class DutyScheduler:
                         model.add(assignments[(ra, day, shift)] == 0)
 
         # distribution, frontloading and backloading
-        distribution_reward = 4
+        distribution_reward_new = 2
+        distribution_reward_return = 4
+        distribution_reward_double_return = 6
         reward_terms = []
         for availability, ra in zip(self.ra_availabilities, all_ras):
             distribution = availability.distribution
+            distribution_reward = distribution_reward_new
+
+            if (availability.community_returner):
+                distribution_reward = distribution_reward_double_return
+            elif (availability.returner):
+                distribution_reward = distribution_reward_return
+                
             for day_idx, day in zip(range(total_days), all_days):
                 if (((day_idx < total_days / 2) and (distribution == Distribution.FRONTLOAD)) or
                         ((day_idx >= total_days / 2) and (distribution == Distribution.BACKLOAD))):

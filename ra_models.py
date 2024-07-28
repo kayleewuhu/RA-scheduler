@@ -11,7 +11,8 @@ class RaAvailability:
     Methods:
     '''
 
-    def __init__(self, name: str = "", no_dates: list[date] = [],
+    def __init__(self, name: str = "", move_in_date: date = None,
+                 no_dates: list[date] = [],
                  no_days: list[DaysOfWeek] = [],
                  distribution: Distribution = Distribution.NONE,
                  returner: bool = False,
@@ -21,6 +22,7 @@ class RaAvailability:
 
         Parameters:
           name - name of RA
+          move_in_date - date the RA is moving in 
           no_dates - dates that RA cannot be on duty
           no_days - days of the week that RA cannot be on duty
           distribution - whether RA prefers to frontload or backload (or none)
@@ -28,6 +30,7 @@ class RaAvailability:
           community_returner - if the RA has been an RA in this community before
         '''
         self.name = name
+        self.move_in_date = move_in_date
         self.no_dates = no_dates
         self.no_days = no_days
         self.distribution = distribution
