@@ -1,4 +1,5 @@
 from duty_scheduler import DutyScheduler
+from spreadsheet_client import SpreadsheetClient
 from ra_models import RaAvailability, DaysOfWeek, Distribution
 from datetime import date
 
@@ -31,7 +32,12 @@ if __name__ == '__main__':
          RaAvailability("McKayla"),
          RaAvailability("Joshie")]
   test = DutyScheduler('2024-01-02', '2024-05-06', ras)
-  test.create_or_model()
+  #test.create_or_model()
+  parser = SpreadsheetClient('2024-01-02')
+  creds = parser.authenticate_user()
+  sheet = parser.create_sheet_resource(creds)
+  print(parser.construct_availabilities(form_answers))
+
   #print(test.create_day_array())
   #print(test.all_dates_of_all_days())
   # weekdays = test.total_weekdays()

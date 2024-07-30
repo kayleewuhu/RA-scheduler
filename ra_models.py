@@ -37,6 +37,10 @@ class RaAvailability:
         self.returner = returner
         self.community_returner = community_returner
 
+    def print_all(self):
+        for attr, value in vars(self).items():
+            print(f"{attr}: {value}")
+
 
 class Ra:
     '''
@@ -63,13 +67,14 @@ class Ra:
         self.pts = points
         self.half_staff = half_staff
         self.returner = returner
-        self.community_returner = community_returner 
+        self.community_returner = community_returner
 
 
 class Holidays:
     '''
     Represents a holiday
     '''
+
     def __init__(self, double_len: list[date] = [], breaks: list[date] = []) -> None:
         '''
         Initialize attributes
@@ -80,7 +85,7 @@ class Holidays:
         '''
         self.double_len = double_len
         self.breaks = breaks
-    
+
     def add_previous_day(self) -> None:
         first_day = self.breaks[0]
         prev_day = first_day - timedelta(days=1)
