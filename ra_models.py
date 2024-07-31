@@ -87,6 +87,13 @@ class Holidays:
         self.breaks = breaks
 
     def add_previous_day(self) -> None:
+        '''
+        Adds the prepending day of the break to the break
+
+        Parameters: None
+
+        Returns: None
+        '''
         if not self.breaks:
             return
         first_day = self.breaks[0]

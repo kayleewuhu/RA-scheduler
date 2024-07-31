@@ -8,9 +8,9 @@ from typing import Callable
 
 def user_input():
     start_date = handle_input(
-        "What is the first day of duty (yyyy-mm-dd)?\n", validate_start_date)
+        "What is the first day of duty (yyyy-mm-dd)?\n", validate_date)
     end_date = handle_input(
-        "What is the last day of duty (yyyy-mm-dd)?\n", validate_end_date)
+        "What is the last day of duty (yyyy-mm-dd)?\n", validate_date)
     validate_start_end(start_date, end_date)
 
     holidays = handle_input(
@@ -39,6 +39,16 @@ def user_input():
 
 
 def handle_input(prompt: str, validate_function: Callable[[str], any]):
+    '''
+    Handles receiving and validating input
+
+    Parameters:
+      prompt - the prompt for the user input
+      validate_function - the function that validates the user's input
+    
+    Returns:
+      the attribute from the input
+    '''
     response = input(prompt)
     while True:
         validated_response = validate_function(response)
@@ -48,29 +58,47 @@ def handle_input(prompt: str, validate_function: Callable[[str], any]):
             response = input(f'Incorrect format. Retry.\n{prompt}')
 
 
-def validate_start_date(start_date: str):
+def validate_date(date: str):
+    '''
+    Validates the user input is a date
+
+    Parameters:
+      date - the user input
+
+    Returns:
+      the date provided by the user as a date object
+    '''
     try:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        return start_date
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+        return date
     except ValueError:
         return None
-
-
-def validate_end_date(end_date: str):
-    try:
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        return end_date
-    except ValueError:
-        return None
-
 
 def validate_start_end(start_date: date, end_date: date):
+    '''
+    Ensures the end date provided comes after the start date
+
+    Parameters:
+      start_date - the start date
+      end_date - the end date
+
+    Returns: None
+    '''
     if (start_date > end_date):
         print('Start date comes after end date. Retry.')
         sys.exit()
 
 
 def validate_holidays(holidays: str):
+    '''
+    Validates the list of holiday dates provided
+
+    Parameters:
+      holidays - the user input
+
+    Returns:
+      the holidays provided by the user as a list of dates
+    '''
     if not holidays:
         return holidays
     try:
@@ -83,6 +111,15 @@ def validate_holidays(holidays: str):
 
 
 def validate_break(extended_holiday: str):
+    '''
+    Validates the break range provided by the user
+
+    Parameters:
+      extended_holiday - the range of dates of the break provided by user
+
+    Returns:
+      a list of dates that represent the break
+    '''
     if not extended_holiday:
         return extended_holiday
     try:

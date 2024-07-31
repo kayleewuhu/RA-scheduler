@@ -24,20 +24,45 @@ class SpreadsheetClient:
         Initialize attributes
 
         Parameters:
-            start_date - first day of duty (yyyy-mm-dd)
+            start_date - first day of duty
         '''
         self.year = start_date.year
 
     def authenticate_user(self):
+        '''
+        Gets session token for spreadsheet API authentication
+
+        Parameters: None
+
+        Returns: 
+            OAuth credentials
+        '''
         flow = InstalledAppFlow.from_client_secrets_file(
             'credentials.json', SCOPES)
         creds = flow.run_local_server(port=0)
         return creds
 
     def create_sheet_resource(self, cred):
+        '''
+        Creates sheet resource
+
+        Parameters:
+            cred - OAuth credentials
+        Returns: 
+            sheet resource
+        '''
         return build('sheets', 'v4', credentials=cred).spreadsheets()
 
     def extract_spreadsheet_id(self, sheet_url):
+        '''
+        Extracts spreadsheet id from the url
+
+        Parameters:
+            sheet_url - the url of the spreadsheet to be parsed
+        
+        Returns:
+            the id of the spreadsheet
+        '''
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", sheet_url)
         if match:
             return match.group(1)
@@ -45,12 +70,31 @@ class SpreadsheetClient:
             raise ValueError("Invalid URL")
 
     def get_form_answers(self, sheet_resource, sheet_url: str):
+        '''
+        Returns the content of the given spreadsheet
+
+        Parameters:
+            sheet_resource - sheet resource
+            sheet_url - the spreadsheet url
+
+        Returns:
+            the content of the spreadsheet as a list of lists
+        '''
         sheet_id = self.extract_spreadsheet_id(sheet_url)
         response = sheet_resource.values().get(spreadsheetId=sheet_id, range='Form responses 1').execute()
         form_answers = response.get('values', [])
         return form_answers
     
-    def match_column_property(self, title_columns: list[str]):
+    def match_column_property(self, title_columns: list[str]):  
+        '''
+        Finds the column index for each attribute of the RA availability class
+
+        Parameters:
+            title_columns - the first row of the spreadsheet that has all the names of the columns
+
+        Returns:
+            a dict matching every RA availability attribute with its column index
+        '''
         availability_properties = {}
         for idx, col in enumerate(title_columns):
             col = col.lower()
@@ -72,7 +116,16 @@ class SpreadsheetClient:
                 continue
         return availability_properties
     
-    def construct_availabilities(self, form_answers):
+    def construct_availabilities(self, form_answers: list[str]):
+        '''
+        Constructs the list of RA availability objects from all the spreadsheet responses
+
+        Parameters:
+            form_answers - the form responses from the spreadsheet (without the first title row)
+
+        Returns:
+            list of RA availabilities
+        '''
         title_row = form_answers.pop(0)
         property_indices = self.match_column_property(title_row)
         ra_availabilities = []
