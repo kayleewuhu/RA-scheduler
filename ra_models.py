@@ -51,8 +51,8 @@ class Ra:
                  name: str = '',
                  points: int = 0,
                  half_staff: bool = False,
-                 returner: bool = True,
-                 community_returner: bool = True) -> None:
+                 returner: bool = False,
+                 community_returner: bool = False) -> None:
         '''
         Initializes attributes
 
@@ -87,6 +87,8 @@ class Holidays:
         self.breaks = breaks
 
     def add_previous_day(self) -> None:
+        if not self.breaks:
+            return
         first_day = self.breaks[0]
         prev_day = first_day - timedelta(days=1)
         self.breaks.insert(0, prev_day)

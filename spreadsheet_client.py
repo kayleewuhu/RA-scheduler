@@ -19,15 +19,14 @@ class SpreadsheetClient:
     Methods:
     '''
 
-    def __init__(self, start_date: str, forms_link: str = '') -> None:
+    def __init__(self, start_date: date) -> None:
         '''
         Initialize attributes
 
         Parameters:
             start_date - first day of duty (yyyy-mm-dd)
         '''
-        self.forms_link = forms_link
-        self.year = start_date.split('-')[0]
+        self.year = start_date.year
 
     def authenticate_user(self):
         flow = InstalledAppFlow.from_client_secrets_file(

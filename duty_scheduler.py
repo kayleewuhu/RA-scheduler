@@ -15,18 +15,18 @@ class DutyScheduler:
     Methods:
     '''
 
-    def __init__(self, start_date: str, end_date: str, ra_availabilities: list[RaAvailability],
+    def __init__(self, start_date: date, end_date: date, ra_availabilities: list[RaAvailability],
                  holidays: Holidays = Holidays(), half_staff: list[str] = []) -> None:
         '''
         Initializes attributes
 
         Parameters:
-          start_date - first day of duty (yyyy-mm-dd)
-          end_date - last day of duty (yyyy-mm-dd)
+          start_date - first day of duty 
+          end_date - last day of duty 
           ra_availabilities - all the responses from the RAs that indicate their availabilities & preferences
         '''
-        self.start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        self.end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        self.start_date = start_date
+        self.end_date = end_date
         self.semester_type = self.determine_semester_season()
         self.ra_availabilities = ra_availabilities
 
@@ -151,9 +151,11 @@ class DutyScheduler:
         ras = []
         for person in self.ra_availabilities:
             if person.name in self.half_staff:
-                ras.append(Ra(person.name, half_staff=True))
+                half_staff = True
             else:
-                ras.append(Ra(person.name))
+                half_staff = False
+            ras.append(Ra(name=person.name, half_staff=half_staff,
+                       returner=person.returner, community_returner=person.community_returner))
         return ras
 
     def create_or_model(self) -> None:
@@ -207,22 +209,22 @@ class DutyScheduler:
                         assignments[(availability, day, shift)] * day.pts)
             model.add(min_pts_per_ra <= sum(pts_earned))
             model.add(sum(pts_earned) <= max_pts_per_ra)
-        
+
         # ensure that an RA isn't scheduled to be on duty before they move in
         for availability, ra in zip(self.ra_availabilities, all_ras):
             for day in all_days:
                 if (day.date <= availability.move_in_date):
                     for shift in range(day.ppl):
                         model.add(assignments[(ra, day, shift)] == 0)
-                else: 
+                else:
                     break
 
         # dates that cannot be done
         for availability, ra in zip(self.ra_availabilities, all_ras):
             for date in availability.no_dates:
-                day = self.day_dict[date]
-                for shift in range(day.ppl):
-                    if day in all_days:
+                if date in self.day_dict:
+                    day = self.day_dict[date]
+                    for shift in range(day.ppl):
                         model.add(assignments[(ra, day, shift)] == 0)
 
         no_days_dict = self.no_days_for_all_ras(all_ras)
@@ -262,12 +264,13 @@ class DutyScheduler:
                 distribution_reward = distribution_reward_double_return
             elif (availability.returner):
                 distribution_reward = distribution_reward_return
-                
+
             for day_idx, day in zip(range(total_days), all_days):
                 if (((day_idx < total_days / 2) and (distribution == Distribution.FRONTLOAD)) or
                         ((day_idx >= total_days / 2) and (distribution == Distribution.BACKLOAD))):
                     for shift in range(day.ppl):
-                        reward_terms.append(assignments[ra, day, shift] * distribution_reward)
+                        reward_terms.append(
+                            assignments[ra, day, shift] * distribution_reward)
                 else:
                     for shift in range(day.ppl):
                         reward_terms.append(assignments[ra, day, shift])
