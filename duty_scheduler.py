@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta
 from ra_models import DaysOfWeek, Holidays
 from ortools.sat.python import cp_model
-from day import Day
+from schedule_models import Day, ScheduleDay
 from constants import DAYS_OF_WEEK, Semester, WEEKENDS, Distribution
 from ra_models import RaAvailability, Ra
 
@@ -33,6 +33,7 @@ class DutyScheduler:
         day_dict_pts = self.create_day_dict()
         self.day_dict = day_dict_pts[0]
         self.total_pts = day_dict_pts[1]
+        self.days_per_month = day_dict_pts[2]
         self.half_staff = half_staff
         self.holidays = holidays
 
@@ -53,7 +54,7 @@ class DutyScheduler:
         elif start_month == 5:
             return Semester.SUMMER
         else:
-            raise ValueError("Semester type cannot be determined")
+            raise ValueError('Semester type cannot be determined')
 
     def create_day_dict(self) -> tuple[dict[date, Day], int]:
         '''
@@ -63,23 +64,33 @@ class DutyScheduler:
         Parameters: None
 
         Returns:
-          a dictionary of info about all days in schedule, and the total number of points in the schedule
+          a dictionary of info about all days in schedule
           dictionary: key -> date, value -> day object
+          the total number of points in the schedule
+          a dictionary of how many days per month
         '''
         num_days = (self.end_date - self.start_date).days + 1
         cur_date = self.start_date
         day_idx = self.start_date.weekday()
         days = {}
         total_pts = 0
+        months = {}
 
         for _ in range(num_days):
             cur_day = Day(cur_date, DAYS_OF_WEEK[day_idx])
             days[cur_date] = cur_day
             total_pts += cur_day.pts * cur_day.ppl
+
+            month = cur_date.strftime('%B')
+    
+            if month in months:
+                months[month] += 1
+            else:
+                months[month] = 1
+
             cur_date = cur_date + timedelta(days=1)
             day_idx = (day_idx + 1) % 7
-
-        return days, total_pts
+        return days, total_pts, months
 
     def revise_total_pts(self) -> None:
         '''
@@ -158,7 +169,7 @@ class DutyScheduler:
                        returner=person.returner, community_returner=person.community_returner))
         return ras
 
-    def create_or_model(self) -> None:
+    def create_or_model(self) -> tuple[list[ScheduleDay], list[Ra]]:
         '''
         Creates the OR model, adding constraints, and solving the problem
         '''
@@ -177,7 +188,7 @@ class DutyScheduler:
             for day in all_days:
                 for shift in range(day.ppl):
                     assignments[(availability, day, shift)] = model.new_bool_var(
-                        (f"assignment_ra{availability}_date{day}_shift{shift}"))
+                        (f'assignment_ra{availability}_date{day}_shift{shift}'))
 
         # adding hard constraints
         # exactly 1 RA per shift
@@ -282,17 +293,23 @@ class DutyScheduler:
     # Print solution.
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             print('Solution found')
-        # Print solution details if needed
-            for d in all_days:
-                print(f"Date: {d.date}, Day: {d.day_of_week}, Pts: {d.pts}")
-                for e in all_ras:
-                    for s in range(d.ppl):
-                        if solver.Value(assignments[e, d, s]):
-                            e.pts += d.pts
-                            print(f"  RA {e.name} works shift {s}")
+        # Print solution details and create schedule 
+            schedule = []
+            for day in all_days:
+                day_schedule = ScheduleDay(day)
+                print(f'Date: {day.date}, Day: {day.day_of_week}, Pts: {day.pts}')
+                for ra in all_ras:
+                    for shift in range(day.ppl):
+                        if solver.Value(assignments[ra, day, shift]):
+                            ra.pts += day.pts
+                            day_schedule.add_ra(ra)
+                            print(f'  RA {ra.name} works shift {shift}')
+                schedule.append(day_schedule)
 
-            for e in all_ras:
-                print(f"RA {e.name} has {e.pts} pts")
+            for ra in all_ras:
+                print(f'RA {ra.name} has {ra.pts} pts')
             print(solver.objective_value)
         else:
             print('No solution found')
+        
+        return schedule, all_ras

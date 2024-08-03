@@ -11,7 +11,7 @@ class RaAvailability:
     Methods:
     '''
 
-    def __init__(self, name: str = "", move_in_date: date = None,
+    def __init__(self, name: str = '', move_in_date: date = None,
                  no_dates: list[date] = [],
                  no_days: list[DaysOfWeek] = [],
                  distribution: Distribution = Distribution.NONE,
@@ -39,7 +39,7 @@ class RaAvailability:
 
     def print_all(self):
         for attr, value in vars(self).items():
-            print(f"{attr}: {value}")
+            print(f'{attr}: {value}')
 
 
 class Ra:

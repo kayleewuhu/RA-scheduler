@@ -1,6 +1,6 @@
 from datetime import date
-from ra_models import DaysOfWeek
-from constants import WEEKENDS, CONSTANTS
+from ra_models import Ra
+from constants import WEEKENDS, CONSTANTS, DaysOfWeek
 
 class Day:
     '''
@@ -67,3 +67,26 @@ class Day:
         self.pts += pts
 
         return self.pts
+
+class ScheduleDay:
+    '''
+    Represents the duty schedule for one day
+
+    Attributes:
+
+    Methods:
+    '''
+
+    def __init__(self, day: Day, ras_on: list[Ra] = []) -> None:
+        '''
+        Initializes attributes
+
+        Parameters:
+          day - information regarding the day
+          ras_on - the RAs scheduled to be on duty for this day
+        '''
+        self.day = day
+        self.ras_on = ras_on
+
+    def add_ra(self, ra):
+        self.ras_on.append(ra)

@@ -3,13 +3,13 @@ from enum import Enum
 
 
 class DaysOfWeek(Enum):
-    MONDAY = "Mon"
-    TUESDAY = "Tues"
-    WEDNESDAY = "Wed"
-    THURSDAY = "Thurs"
-    FRIDAY = "Fri"
-    SATURDAY = "Sat"
-    SUNDAY = "Sun"
+    MONDAY = 'Mon'
+    TUESDAY = 'Tues'
+    WEDNESDAY = 'Wed'
+    THURSDAY = 'Thurs'
+    FRIDAY = 'Fri'
+    SATURDAY = 'Sat'
+    SUNDAY = 'Sun'
 
 
 DAYS_OF_WEEK = [DaysOfWeek.MONDAY, DaysOfWeek.TUESDAY, DaysOfWeek.WEDNESDAY,
@@ -38,5 +38,5 @@ class Constants:
 
 
 # Initialize the constant
-# user_value = input("Enter a value for the constant: ")
+# user_value = input('Enter a value for the constant: ')
 CONSTANTS = Constants(2, 2)

@@ -8,21 +8,22 @@ from typing import Callable
 
 def user_input():
     start_date = handle_input(
-        "What is the first day of duty (yyyy-mm-dd)?\n", validate_date)
+        'What is the first day of duty (yyyy-mm-dd)?\n', validate_date)
     end_date = handle_input(
-        "What is the last day of duty (yyyy-mm-dd)?\n", validate_date)
+        'What is the last day of duty (yyyy-mm-dd)?\n', validate_date)
     validate_start_end(start_date, end_date)
 
     holidays = handle_input(
-        "List all the days in which a 12 hour shift becomes a 24 hour shift (holidays, yyyy-mm-dd):\n", validate_holidays)
+        'List all the days in which a 12 hour shift becomes a 24 hour shift (holidays, yyyy-mm-dd):\n', validate_holidays)
     extended_holiday = handle_input(
-        "Provide the date range for break (yyyy-mm-dd to yyyy-mm-dd):\n", validate_break)
+        'Provide the date range for break (yyyy-mm-dd to yyyy-mm-dd):\n', validate_break)
     half_staff = input(
-        "List the names (as they appear in the form responses) of the RAs on half staff:\n")
+        'List the names (as they appear in the form responses) of the RAs on half staff:\n')
     form_responses_url = input(
-        "Please enter the url to the form containing the responses:\n")
+        'Please enter the url to the form containing the responses:\n')
+    schedule_name = input('What is the title of the schedule?')
 
-    spreadsheet_parser = SpreadsheetClient(start_date)
+    spreadsheet_parser = SpreadsheetClient(start_date, schedule_name)
     creds = spreadsheet_parser.authenticate_user()
     sheet = spreadsheet_parser.create_sheet_resource(creds)
     form_answers = spreadsheet_parser.get_form_answers(
@@ -45,7 +46,7 @@ def handle_input(prompt: str, validate_function: Callable[[str], any]):
     Parameters:
       prompt - the prompt for the user input
       validate_function - the function that validates the user's input
-    
+
     Returns:
       the attribute from the input
     '''
@@ -73,6 +74,7 @@ def validate_date(date: str):
         return date
     except ValueError:
         return None
+
 
 def validate_start_end(start_date: date, end_date: date):
     '''
@@ -143,57 +145,64 @@ def validate_break(extended_holiday: str):
 
 if __name__ == '__main__':
     # user_input()
-    ras = [RaAvailability("Kari", date(2023, 12, 19), [date(2024, 1, 13), date(2024, 1, 14)], [DaysOfWeek.WEDNESDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Radhika", date(2024, 1, 2), [date(2024, 1, 3), date(2024, 1, 4)], [
+    ras = [RaAvailability('Kari', date(2023, 12, 19), [date(2024, 1, 13), date(2024, 1, 14)], [DaysOfWeek.WEDNESDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
+           RaAvailability('Radhika', date(2024, 1, 2), [date(2024, 1, 3), date(2024, 1, 4)], [
                           DaysOfWeek.MONDAY, DaysOfWeek.FRIDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Annie", date(
+           RaAvailability('Annie', date(
                2024, 1, 2), distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Elise", date(
+           RaAvailability('Elise', date(
                2024, 1, 1), distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Luke", date(
+           RaAvailability('Luke', date(
                2024, 1, 2), distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Megan", date(2024, 1, 2), [date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(
+           RaAvailability('Megan', date(2024, 1, 2), [date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(
                2024, 3, 8), date(2024, 3, 9), date(2024, 3, 10)], [DaysOfWeek.FRIDAY, DaysOfWeek.SATURDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Casey", date(2024, 1, 2), [date(2024, 1, 8), date(2024, 1, 17), date(2024, 2, 25), date(2024, 3, 20), date(2024, 3, 1), date(2024, 3, 2), date(2024, 3, 3), date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(2024, 3, 8), date(2024, 3, 9), date(2024, 3, 10), date(2024, 4, 1), date(2024, 4, 5)],
+           RaAvailability('Casey', date(2024, 1, 2), [date(2024, 1, 8), date(2024, 1, 17), date(2024, 2, 25), date(2024, 3, 20), date(2024, 3, 1), date(2024, 3, 2), date(2024, 3, 3), date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(2024, 3, 8), date(2024, 3, 9), date(2024, 3, 10), date(2024, 4, 1), date(2024, 4, 5)],
                           [DaysOfWeek.WEDNESDAY, DaysOfWeek.THURSDAY], returner=True, community_returner=True),
-           RaAvailability("Matt", date(2024, 1, 3), [date(2024, 1, 6), date(2024, 1, 7), date(
+           RaAvailability('Matt', date(2024, 1, 3), [date(2024, 1, 6), date(2024, 1, 7), date(
                2024, 2, 14), date(2024, 3, 26), date(2024, 3, 27)], [DaysOfWeek.TUESDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Grace", date(2024, 1, 3), [date(2024, 1, 6), date(
+           RaAvailability('Grace', date(2024, 1, 3), [date(2024, 1, 6), date(
                2024, 1, 7), date(2024, 2, 14), date(2024, 3, 27)], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Tony", date(2024, 1, 2), [date(2024, 3, 10), date(2024, 3, 11), date(2024, 3, 12), date(2024, 3, 13), date(
+           RaAvailability('Tony', date(2024, 1, 2), [date(2024, 3, 10), date(2024, 3, 11), date(2024, 3, 12), date(2024, 3, 13), date(
                2024, 3, 14), date(2024, 3, 15), date(2024, 3, 16), date(2024, 3, 17), date(2024, 3, 18)], [DaysOfWeek.SATURDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Nico", date(
+           RaAvailability('Nico', date(
                2024, 1, 2), distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Tula", date(2024, 1, 2), [date(2024, 2, 17), date(2024, 2, 18), date(2024, 2, 19), date(2024, 2, 20), date(
+           RaAvailability('Tula', date(2024, 1, 2), [date(2024, 2, 17), date(2024, 2, 18), date(2024, 2, 19), date(2024, 2, 20), date(
                2024, 2, 21), date(2024, 2, 22), date(2024, 2, 23), date(2024, 2, 24), date(2024, 2, 25)], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Fortune", date(2024, 1, 2), no_days=[
+           RaAvailability('Fortune', date(2024, 1, 2), no_days=[
                           DaysOfWeek.MONDAY, DaysOfWeek.TUESDAY, DaysOfWeek.WEDNESDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Selma", date(2024, 1, 2), [date(2024, 2, 17), date(2024, 2, 18), date(
+           RaAvailability('Selma', date(2024, 1, 2), [date(2024, 2, 17), date(2024, 2, 18), date(
                2024, 2, 19), date(2024, 2, 20)], [DaysOfWeek.MONDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Tom", date(2024, 1, 2), no_days=[DaysOfWeek.TUESDAY, DaysOfWeek.THURSDAY,
+           RaAvailability('Tom', date(2024, 1, 2), no_days=[DaysOfWeek.TUESDAY, DaysOfWeek.THURSDAY,
                           DaysOfWeek.FRIDAY, DaysOfWeek.SATURDAY, DaysOfWeek.SUNDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Kaylee", date(2024, 1, 3),
+           RaAvailability('Kaylee', date(2024, 1, 3),
                           returner=True, community_returner=True),
-           RaAvailability("Bella", date(2024, 1, 2), [date(2024, 2, 15), date(2024, 2, 16), date(2024, 2, 17), date(2024, 2, 18), date(2024, 2, 19), date(2024, 3, 29), date(2024, 3, 1), date(
+           RaAvailability('Bella', date(2024, 1, 2), [date(2024, 2, 15), date(2024, 2, 16), date(2024, 2, 17), date(2024, 2, 18), date(2024, 2, 19), date(2024, 3, 29), date(2024, 3, 1), date(
                2024, 3, 2), date(2024, 3, 3), date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(2024, 3, 8), date(2024, 3, 9), date(2024, 3, 10),], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Julia", date(2024, 1, 2), [date(2024, 1, 12), date(
+           RaAvailability('Julia', date(2024, 1, 2), [date(2024, 1, 12), date(
                2024, 3, 30), date(2024, 3, 31)], [DaysOfWeek.THURSDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Ethan", date(2024, 1, 2), [date(2024, 4, 14)], [
+           RaAvailability('Ethan', date(2024, 1, 2), [date(2024, 4, 14)], [
                           DaysOfWeek.FRIDAY, DaysOfWeek.SATURDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Garett", date(2024, 1, 2), [date(2024, 3, 12)], [
+           RaAvailability('Garett', date(2024, 1, 2), [date(2024, 3, 12)], [
                           DaysOfWeek.MONDAY, DaysOfWeek.TUESDAY, DaysOfWeek.WEDNESDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("David", date(
+           RaAvailability('David', date(
                2024, 1, 2), distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Karena", date(
+           RaAvailability('Karena', date(
                2024, 1, 2), distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("Derquan", date(2024, 1, 2), [date(2024, 3, 29), date(2024, 3, 30), date(
+           RaAvailability('Derquan', date(2024, 1, 2), [date(2024, 3, 29), date(2024, 3, 30), date(
                2024, 3, 31)], [DaysOfWeek.WEDNESDAY, DaysOfWeek.SATURDAY], returner=True, community_returner=True),
-           RaAvailability("Elizabeth", date(2024, 1, 2), [date(2024, 1, 13), date(2024, 1, 14), date(2024, 1, 15), date(
+           RaAvailability('Elizabeth', date(2024, 1, 2), [date(2024, 1, 13), date(2024, 1, 14), date(2024, 1, 15), date(
                2024, 3, 17), date(2024, 3, 29), date(2024, 3, 30), date(2024, 3, 31)], [DaysOfWeek.THURSDAY], distribution=Distribution.FRONTLOAD, returner=True, community_returner=True),
-           RaAvailability("McKayla", date(2024, 1, 2),
+           RaAvailability('McKayla', date(2024, 1, 2),
                           returner=True, community_returner=True),
-           RaAvailability("Joshie", date(2024, 1, 2), returner=True, community_returner=True)]
+           RaAvailability('Joshie', date(2024, 1, 2), returner=True, community_returner=True)]
 
-    test = DutyScheduler(date(2024, 1, 2), date(2024, 5, 6), ras, Holidays(
-        [date(2024, 1, 15), date(2024, 2, 19), date(2024, 4, 15)], [date(2024, 3, 1), date(2024, 3, 2), date(2024, 3, 3), date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(2024, 3, 8), date(2024, 3, 9), date(2024, 3, 10)]), ['Joshie', 'Grace', 'Matt', 'Tula', 'Selma', 'Tom', 'Ethan', 'Derquan', 'McKayla', 'Elizabeth', 'Elda', 'Tony'])
-    test.create_or_model()
+    holidays = Holidays(
+        [date(2024, 1, 15), date(2024, 2, 19), date(2024, 4, 15)], [date(2024, 3, 1), date(2024, 3, 2), date(2024, 3, 3), date(2024, 3, 4), date(2024, 3, 5), date(2024, 3, 6), date(2024, 3, 7), date(2024, 3, 8), date(2024, 3, 9), date(2024, 3, 10)])
+    half_staff = ['Joshie', 'Grace', 'Matt', 'Tula', 'Selma', 'Tom', 'Ethan', 'Derquan', 'McKayla', 'Elizabeth', 'Elda', 'Tony']
+    test = DutyScheduler(date(2024, 1, 2), date(2024, 5, 6), ras, holidays, half_staff)
+    schedule, ras = test.create_or_model()
+
+    spreadsheet = SpreadsheetClient(date(2024, 1, 2), 'Test schedule 2024')
+    spreadsheet_id, sheet_id = spreadsheet.create_sheet()
+    spreadsheet.base_schedule(spreadsheet_id, sheet_id, schedule, ras, test.days_per_month)
+
