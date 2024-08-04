@@ -201,8 +201,8 @@ if __name__ == '__main__':
     half_staff = ['Joshie', 'Grace', 'Matt', 'Tula', 'Selma', 'Tom', 'Ethan', 'Derquan', 'McKayla', 'Elizabeth', 'Elda', 'Tony']
     test = DutyScheduler(date(2024, 1, 2), date(2024, 5, 6), ras, holidays, half_staff)
     schedule, ras = test.create_or_model()
-
     spreadsheet = SpreadsheetClient(date(2024, 1, 2), 'Test schedule 2024')
     spreadsheet_id, sheet_id = spreadsheet.create_sheet()
-    spreadsheet.base_schedule(spreadsheet_id, sheet_id, schedule, ras, test.days_per_month)
+    spreadsheet.base_schedule(spreadsheet_id, sheet_id, test.days_per_month)
+    spreadsheet.add_schedule(spreadsheet_id, sheet_id, schedule)
 

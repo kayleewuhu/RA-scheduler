@@ -7,6 +7,7 @@ from ra_models import RaAvailability, Ra
 from schedule_models import ScheduleDay
 from datetime import datetime, date
 from constants import DaysOfWeek, Distribution, CONSTANTS
+import json
 
 # Define the scope for Sheets API
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -199,13 +200,14 @@ class SpreadsheetClient:
     #         pickle.dump(creds, token)
     #     return creds
 
-    def create_sheet(self) -> str:
+    def create_sheet(self) -> tuple[str, str]:
         '''
         Creates a new spreadsheet
 
         Parameters: None
         Returns:
             the spreadsheet id
+            the sheet id
         '''
         spreadsheet = self.sheet.create(body={
             'properties': {'title': self.name},
@@ -227,7 +229,18 @@ class SpreadsheetClient:
         sheet_id = spreadsheet_metadata['sheets'][0]['properties']['sheetId']
         return spreadsheet_id, sheet_id
 
-    def base_schedule(self, spreadsheet_id: str, sheet_id: str, schedule: list[ScheduleDay], ras: list[Ra], days_per_month: dict) -> str:
+    def base_schedule(self, spreadsheet_id: str, sheet_id: str, days_per_month: dict) -> str:
+        '''
+        Creates the headings for the schedule
+
+        Parameters: 
+                                                spreadsheet_id - spreadsheet id
+            sheet_id - sheet id
+            days_per_month - how many days per month
+
+        Returns: None
+        '''
+
         start_row = 1
         requests = []
 
@@ -430,3 +443,29 @@ class SpreadsheetClient:
             spreadsheetId=spreadsheet_id,
             body={'requests': requests}
         ).execute()
+
+    def add_schedule(self, spreadsheet_id: str, schedule: list[ScheduleDay]):
+        '''
+        Add the schedule to the spreadsheet
+
+        Parameters:
+          spreadsheet_id - spreadsheet id
+          schedule - the schedule information (day & ras on)
+        '''
+        data = [
+            {'range': 'Duty!B2',
+             'values': [
+                 [
+                     day_prop.day.day_of_week.value,
+                     day_prop.day.date.strftime('%b %d'),
+                     day_prop.day.pts,
+                     '24 HRS' if day_prop.day.pts == 2 else ''
+                 ] + [ra.name for ra in day_prop.ras_on]
+                 for day_prop in schedule
+             ]
+             }
+        ]
+
+        print(data)
+        response = self.sheet.values().batchUpdate(spreadsheetId=spreadsheet_id, body={
+            'valueInputOption': 'USER_ENTERED', 'data': data}).execute()

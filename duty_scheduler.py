@@ -82,7 +82,7 @@ class DutyScheduler:
             total_pts += cur_day.pts * cur_day.ppl
 
             month = cur_date.strftime('%B')
-    
+
             if month in months:
                 months[month] += 1
             else:
@@ -293,11 +293,12 @@ class DutyScheduler:
     # Print solution.
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             print('Solution found')
-        # Print solution details and create schedule 
+        # Print solution details and create schedule
             schedule = []
             for day in all_days:
                 day_schedule = ScheduleDay(day)
-                print(f'Date: {day.date}, Day: {day.day_of_week}, Pts: {day.pts}')
+                print(f'Date: {day.date}, Day: {
+                      day.day_of_week}, Pts: {day.pts}')
                 for ra in all_ras:
                     for shift in range(day.ppl):
                         if solver.Value(assignments[ra, day, shift]):
@@ -311,5 +312,4 @@ class DutyScheduler:
             print(solver.objective_value)
         else:
             print('No solution found')
-        
         return schedule, all_ras

@@ -77,16 +77,21 @@ class ScheduleDay:
     Methods:
     '''
 
-    def __init__(self, day: Day, ras_on: list[Ra] = []) -> None:
+    def __init__(self, day: Day) -> None:
         '''
         Initializes attributes
 
         Parameters:
           day - information regarding the day
-          ras_on - the RAs scheduled to be on duty for this day
         '''
         self.day = day
-        self.ras_on = ras_on
+        self.ras_on = []
 
     def add_ra(self, ra):
         self.ras_on.append(ra)
+    
+    # def clear_ras(self):
+    #     self.ras_on.clear()
+
+    def print(self):
+        print(f'${self.day.date}, ${self.day.day_of_week}, ${self.day.pts}, ${[ra.name for ra in self.ras_on]}')
