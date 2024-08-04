@@ -204,5 +204,6 @@ if __name__ == '__main__':
     spreadsheet = SpreadsheetClient(date(2024, 1, 2), 'Test schedule 2024')
     spreadsheet_id, sheet_id = spreadsheet.create_sheet()
     spreadsheet.base_schedule(spreadsheet_id, sheet_id, test.days_per_month)
-    spreadsheet.add_schedule(spreadsheet_id, schedule)
-
+    response, cols = spreadsheet.add_schedule(spreadsheet_id, schedule)
+    spreadsheet.add_ra_points(spreadsheet_id, ras, cols)
+    spreadsheet.format_sheet(spreadsheet_id, sheet_id)

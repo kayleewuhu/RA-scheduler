@@ -234,7 +234,7 @@ class SpreadsheetClient:
         Creates the headings for the schedule
 
         Parameters: 
-                                                spreadsheet_id - spreadsheet id
+            spreadsheet_id - spreadsheet id
             sheet_id - sheet id
             days_per_month - how many days per month
 
@@ -297,6 +297,36 @@ class SpreadsheetClient:
             CONSTANTS.PPL_PER_SHIFT_WEEKDAY, CONSTANTS.PPL_PER_SHIFT_WEEKEND)
         requests += [
             {
+                'updateCells': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'startRowIndex': 0,
+                        'endRowIndex': 1,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': 1
+                    },
+                    'rows': [
+                        {
+                            'values': [
+                                {
+                                    'userEnteredFormat': {
+                                        'textFormat': {
+                                            'fontSize': 10,
+                                            'bold': True
+                                        },
+                                        'horizontalAlignment': 'CENTER',
+                                        'verticalAlignment': 'MIDDLE'
+                                    },
+                                    'userEnteredValue': {'stringValue': 'Month'}
+
+                                }
+                            ]
+                        }
+                    ],
+                    'fields': 'userEnteredValue,userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)'
+                }
+            },
+            {
                 'mergeCells': {
                     'range': {
                         'sheetId': sheet_id,
@@ -330,7 +360,6 @@ class SpreadsheetClient:
                                         'verticalAlignment': 'MIDDLE'
                                     },
                                     'userEnteredValue': {'stringValue': 'DAY'}
-
                                 }
                             ]
                         }
@@ -443,6 +472,7 @@ class SpreadsheetClient:
             spreadsheetId=spreadsheet_id,
             body={'requests': requests}
         ).execute()
+        return response
 
     def add_schedule(self, spreadsheet_id: str, schedule: list[ScheduleDay]):
         '''
@@ -466,6 +496,102 @@ class SpreadsheetClient:
              }
         ]
 
-        print(data)
+        num_columns = max([len(row) for row in data[0]['values']])
         response = self.sheet.values().batchUpdate(spreadsheetId=spreadsheet_id, body={
             'valueInputOption': 'USER_ENTERED', 'data': data}).execute()
+        return response, num_columns
+
+    def add_ra_points(self, spreadsheet_id: str, ras: list[Ra], num_columns: int):
+        '''
+        Adds a table to the spreadsheet that specifies how many 1, 2, and 3 pt shifts 
+        and total pts (and shadow shifts) each RA has
+
+        Parameters:
+          spreadsheet_id - id of spreadsheet
+          ras - list of RAs 
+          num_columns - number of columns that are full
+        '''
+        start_col = chr(ord('A') + num_columns + 2)
+        start_row = 1
+        range_start = f'Duty!{start_col}{start_row}'
+        pts_col = 'D'
+        first_ra_col = 'F'
+        max_ras_per_shift = max(
+            CONSTANTS.PPL_PER_SHIFT_WEEKDAY, CONSTANTS.PPL_PER_SHIFT_WEEKEND)
+
+        values = [['RA', '1 point', '2 point',
+                   '3 point', 'Total points', 'Shadow shifts']]
+        for ra in ras:
+            start_row += 1
+            row = [ra.name]
+            for pt_val in range(1, 4):
+                pt_count_formula = f'=COUNTIFS({pts_col}:{pts_col}, {pt_val}, {first_ra_col}:{
+                    first_ra_col}, {start_col}{start_row})'
+                for shift_col in range(1, max_ras_per_shift):
+                    next_ra_col = chr(
+                        ord('A') + (ord(first_ra_col) - ord('A') + shift_col) % 26)
+                    pt_count_formula += f' + COUNTIFS({pts_col}:{pts_col}, {pt_val}, {next_ra_col}:{
+                        next_ra_col}, {start_col}{start_row})'
+                row.append(pt_count_formula)
+            total_pts_formula = f'=SUMIF({first_ra_col}:{first_ra_col}, {start_col}{
+                start_row}, {pts_col}:{pts_col})'
+            for shift_col in range(1, max_ras_per_shift):
+                next_ra_col = chr(
+                    ord('A') + (ord(first_ra_col) - ord('A') + shift_col) % 26)
+                total_pts_formula += f' + SUMIF({next_ra_col}:{next_ra_col}, {start_col}{
+                    start_row}, {pts_col}:{pts_col})'
+            row.append(total_pts_formula)
+            row.append('0' if (ra.returner and ra.community_returner) else '')
+            values.append(row)
+
+        data = {
+            'values': values
+        }
+
+        self.sheet.values().update(
+            spreadsheetId=spreadsheet_id,
+            range=range_start,
+            valueInputOption='USER_ENTERED',
+            body=data
+        ).execute()
+
+    def format_sheet(self, spreadsheet_id: str, sheet_id: str):
+        requests = [
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "horizontalAlignment": "CENTER",
+                            "verticalAlignment": "MIDDLE"
+                        }
+                    },
+                    "fields": "userEnteredFormat(horizontalAlignment, verticalAlignment)"
+                }
+            },
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 1
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "textFormat": {
+                                "bold": True
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat(textFormat)"
+                }
+            }
+        ]
+
+        response = self.sheet.batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={"requests": requests}
+        ).execute()
+        return response
