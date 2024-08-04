@@ -556,6 +556,13 @@ class SpreadsheetClient:
         ).execute()
 
     def format_sheet(self, spreadsheet_id: str, sheet_id: str):
+        '''
+        Formats spreadsheet
+
+        Parameters:
+          spreadsheet_id - id of spreadsheet
+          sheet_id - id of sheet
+        '''
         requests = [
             {
                 "repeatCell": {
