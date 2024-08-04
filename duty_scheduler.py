@@ -1,4 +1,5 @@
 from datetime import datetime, date, timedelta
+import math
 from ra_models import DaysOfWeek, Holidays
 from ortools.sat.python import cp_model
 from schedule_models import Day, ScheduleDay
@@ -21,8 +22,8 @@ class DutyScheduler:
         Initializes attributes
 
         Parameters:
-          start_date - first day of duty 
-          end_date - last day of duty 
+          start_date - first day of duty
+          end_date - last day of duty
           ra_availabilities - all the responses from the RAs that indicate their availabilities & preferences
         '''
         self.start_date = start_date
@@ -224,7 +225,7 @@ class DutyScheduler:
         # ensure that an RA isn't scheduled to be on duty before they move in
         for availability, ra in zip(self.ra_availabilities, all_ras):
             for day in all_days:
-                if (day.date <= availability.move_in_date):
+                if (day.date < availability.move_in_date):
                     for shift in range(day.ppl):
                         model.add(assignments[(ra, day, shift)] == 0)
                 else:
@@ -287,13 +288,39 @@ class DutyScheduler:
                         reward_terms.append(assignments[ra, day, shift])
         model.Maximize(sum(reward_terms))
 
+        penalties = []
+
+        days_per_week = 7
+        num_weeks = math.ceil(total_days / days_per_week)
+        days = list(all_days)
+
+        for ra in all_ras:
+            for week in range(num_weeks):
+                shifts_in_week = []
+                for day in range(week * days_per_week, min((week + 1) * days_per_week, total_days)):
+                    day_obj = days[day]
+                    for shift in range(day_obj.ppl):
+                        shifts_in_week.append(
+                            assignments[(ra, day_obj, shift)])
+
+                # Penalty variable if more than 2 shifts are assigned in this week
+                overwork_penalty = model.NewBoolVar(
+                    f'overwork_ra{ra}_week{week}')
+                model.Add(sum(shifts_in_week) <= 2 + (5 * overwork_penalty))
+                # Add the penalty variable to the list of penalties
+                penalties.append(overwork_penalty)
+
+        # Minimize the total penalties
+        model.Minimize(sum(penalties))
+
         solver = cp_model.CpSolver()
         status = solver.solve(model)
         print(status)
-    # Print solution.
+        # Print solution.
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             print('Solution found')
-        # Print solution details and create schedule
+
+            # Print solution details and create schedule
             schedule = []
             for day in all_days:
                 day_schedule = ScheduleDay(day)
