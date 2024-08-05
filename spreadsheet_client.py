@@ -216,6 +216,11 @@ class SpreadsheetClient:
                     'properties': {
                         'title': 'Duty',
                     }
+                },
+                {
+                    'properties': {
+                        'title': 'Per RA'
+                    }
                 }
             ]
         }, fields='spreadsheetId').execute()
@@ -226,8 +231,9 @@ class SpreadsheetClient:
             spreadsheetId=spreadsheet_id).execute()
 
         # Find the sheet ID of the first sheet
-        sheet_id = spreadsheet_metadata['sheets'][0]['properties']['sheetId']
-        return spreadsheet_id, sheet_id
+        sheet_ids = [sheet['properties']['sheetId']
+                     for sheet in spreadsheet_metadata['sheets']]
+        return spreadsheet_id, sheet_ids
 
     def base_schedule(self, spreadsheet_id: str, sheet_id: str, days_per_month: dict) -> str:
         '''
@@ -309,21 +315,13 @@ class SpreadsheetClient:
                         {
                             'values': [
                                 {
-                                    'userEnteredFormat': {
-                                        'textFormat': {
-                                            'fontSize': 10,
-                                            'bold': True
-                                        },
-                                        'horizontalAlignment': 'CENTER',
-                                        'verticalAlignment': 'MIDDLE'
-                                    },
                                     'userEnteredValue': {'stringValue': 'Month'}
 
                                 }
                             ]
                         }
                     ],
-                    'fields': 'userEnteredValue,userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)'
+                    'fields': 'userEnteredValue'
                 }
             },
             {
@@ -351,20 +349,12 @@ class SpreadsheetClient:
                         {
                             'values': [
                                 {
-                                    'userEnteredFormat': {
-                                        'textFormat': {
-                                            'fontSize': 10,
-                                            'bold': True
-                                        },
-                                        'horizontalAlignment': 'CENTER',
-                                        'verticalAlignment': 'MIDDLE'
-                                    },
                                     'userEnteredValue': {'stringValue': 'DAY'}
                                 }
                             ]
                         }
                     ],
-                    'fields': 'userEnteredValue,userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)'
+                    'fields': 'userEnteredValue'
                 }
             },
             {
@@ -380,20 +370,12 @@ class SpreadsheetClient:
                         {
                             'values': [
                                 {
-                                    'userEnteredFormat': {
-                                        'textFormat': {
-                                            'fontSize': 10,
-                                            'bold': True
-                                        },
-                                        'horizontalAlignment': 'CENTER',
-                                        'verticalAlignment': 'MIDDLE'
-                                    },
                                     'userEnteredValue': {'stringValue': 'Points'}
                                 }
                             ]
                         }
                     ],
-                    'fields': 'userEnteredValue,userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)'
+                    'fields': 'userEnteredValue'
                 }
             },
             {
@@ -409,20 +391,12 @@ class SpreadsheetClient:
                         {
                             'values': [
                                 {
-                                    'userEnteredFormat': {
-                                        'textFormat': {
-                                            'fontSize': 10,
-                                            'bold': True
-                                        },
-                                        'horizontalAlignment': 'CENTER',
-                                        'verticalAlignment': 'MIDDLE'
-                                    },
                                     'userEnteredValue': {'stringValue': 'Notes'}
                                 }
                             ]
                         }
                     ],
-                    'fields': 'userEnteredValue,userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)'
+                    'fields': 'userEnteredValue'
                 }
             },
             {
@@ -450,20 +424,12 @@ class SpreadsheetClient:
                         {
                             'values': [
                                 {
-                                    'userEnteredFormat': {
-                                        'textFormat': {
-                                            'fontSize': 10,
-                                            'bold': True
-                                        },
-                                        'horizontalAlignment': 'CENTER',
-                                        'verticalAlignment': 'MIDDLE'
-                                    },
                                     'userEnteredValue': {'stringValue': 'RAs on Duty'}
                                 }
                             ]
                         }
                     ],
-                    'fields': 'userEnteredValue,userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment)'
+                    'fields': 'userEnteredValue'
                 }
             }
         ]
@@ -501,47 +467,75 @@ class SpreadsheetClient:
             'valueInputOption': 'USER_ENTERED', 'data': data}).execute()
         return response, num_columns
 
-    def add_ra_points(self, spreadsheet_id: str, ras: list[Ra], num_columns: int):
+    def add_half_staff(self, spreadsheet_id: str, ras: list[Ra], num_columns: int):
+        '''
+        Adds a list of all RAs on half staff to duty sheet
+
+        Parameters:
+          spreadsheet_id - id of spreadsheet
+          ras - list of RAs
+          num_columns - number of columns that are full
+        '''
+        range_start = chr(ord('A') + num_columns + 2)
+        values = [['Half Staff']]
+        for ra in ras:
+            if ra.half_staff:
+                values.append([ra.name])
+
+        data = {
+            'values': values
+        }
+
+        self.sheet.values().update(
+            spreadsheetId=spreadsheet_id,
+            range=f'Duty!{range_start}1',
+            valueInputOption='USER_ENTERED',
+            body=data
+        ).execute()
+
+    def add_ra_points(self, spreadsheet_id: str, ras: list[Ra]):
         '''
         Adds a table to the spreadsheet that specifies how many 1, 2, and 3 pt shifts 
-        and total pts (and shadow shifts) each RA has
+        and total pts (and shadow shifts, half staff) each RA has (on separate sheet)
 
         Parameters:
           spreadsheet_id - id of spreadsheet
           ras - list of RAs 
           num_columns - number of columns that are full
         '''
-        start_col = chr(ord('A') + num_columns + 2)
+        start_col = 'A'
         start_row = 1
-        range_start = f'Duty!{start_col}{start_row}'
+        range_start = f'Per RA!{start_col}{start_row}'
         pts_col = 'D'
         first_ra_col = 'F'
+        schedule_sheet = 'Duty'
         max_ras_per_shift = max(
             CONSTANTS.PPL_PER_SHIFT_WEEKDAY, CONSTANTS.PPL_PER_SHIFT_WEEKEND)
 
         values = [['RA', '1 point', '2 point',
-                   '3 point', 'Total points', 'Shadow shifts']]
+                   '3 point', 'Total points', 'Shadow shifts', 'Half staff']]
         for ra in ras:
             start_row += 1
             row = [ra.name]
             for pt_val in range(1, 4):
-                pt_count_formula = f'=COUNTIFS({pts_col}:{pts_col}, {pt_val}, {first_ra_col}:{
+                pt_count_formula = f'=COUNTIFS({schedule_sheet}!{pts_col}:{pts_col}, {pt_val}, {schedule_sheet}!{first_ra_col}:{
                     first_ra_col}, {start_col}{start_row})'
                 for shift_col in range(1, max_ras_per_shift):
                     next_ra_col = chr(
                         ord('A') + (ord(first_ra_col) - ord('A') + shift_col) % 26)
-                    pt_count_formula += f' + COUNTIFS({pts_col}:{pts_col}, {pt_val}, {next_ra_col}:{
+                    pt_count_formula += f' + COUNTIFS({schedule_sheet}!{pts_col}:{pts_col}, {pt_val}, {schedule_sheet}!{next_ra_col}:{
                         next_ra_col}, {start_col}{start_row})'
                 row.append(pt_count_formula)
-            total_pts_formula = f'=SUMIF({first_ra_col}:{first_ra_col}, {start_col}{
-                start_row}, {pts_col}:{pts_col})'
+            total_pts_formula = f'=SUMIF({schedule_sheet}!{first_ra_col}:{first_ra_col}, {start_col}{
+                start_row}, {schedule_sheet}!{pts_col}:{pts_col})'
             for shift_col in range(1, max_ras_per_shift):
                 next_ra_col = chr(
                     ord('A') + (ord(first_ra_col) - ord('A') + shift_col) % 26)
-                total_pts_formula += f' + SUMIF({next_ra_col}:{next_ra_col}, {start_col}{
-                    start_row}, {pts_col}:{pts_col})'
+                total_pts_formula += f' + SUMIF({schedule_sheet}!{next_ra_col}:{next_ra_col}, {start_col}{
+                    start_row}, {schedule_sheet}!{pts_col}:{pts_col})'
             row.append(total_pts_formula)
             row.append('0' if (ra.returner and ra.community_returner) else '')
+            row.append('Yes' if ra.half_staff else 'No')
             values.append(row)
 
         data = {
@@ -567,7 +561,7 @@ class SpreadsheetClient:
             {
                 "repeatCell": {
                     "range": {
-                        "sheetId": sheet_id,
+                        "sheetId": sheet_id[0],
                     },
                     "cell": {
                         "userEnteredFormat": {
@@ -581,7 +575,38 @@ class SpreadsheetClient:
             {
                 "repeatCell": {
                     "range": {
-                        "sheetId": sheet_id,
+                        "sheetId": sheet_id[1],
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "horizontalAlignment": "CENTER",
+                            "verticalAlignment": "MIDDLE"
+                        }
+                    },
+                    "fields": "userEnteredFormat(horizontalAlignment, verticalAlignment)"
+                }
+            },
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id[0],
+                        "startRowIndex": 0,
+                        "endRowIndex": 1
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "textFormat": {
+                                "bold": True
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat(textFormat)"
+                }
+            },
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id[1],
                         "startRowIndex": 0,
                         "endRowIndex": 1
                     },
