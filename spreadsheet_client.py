@@ -173,7 +173,6 @@ class SpreadsheetClient:
                 ra_properties[property] = formatted_response
             ra = RaAvailability(**ra_properties)
             ra_availabilities.append(ra)
-            ra.print_all()
         return ra_availabilities
 
     # def authenticate_user(self):

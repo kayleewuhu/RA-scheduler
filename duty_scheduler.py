@@ -263,6 +263,8 @@ class DutyScheduler:
                     for shift in range(day.ppl):
                         model.add(assignments[(ra, day, shift)] == 0)
 
+        # soft constraints:
+        # rewards
         # distribution, frontloading and backloading
         distribution_reward_new = 2
         distribution_reward_return = 4
@@ -288,8 +290,11 @@ class DutyScheduler:
                         reward_terms.append(assignments[ra, day, shift])
         model.Maximize(sum(reward_terms))
 
-        penalties = []
+        # penalties
+        penalty_terms = []
 
+        # penalize if an RA has more than 2 shifts a week
+        too_many_shifts_penalty = 5
         days_per_week = 7
         num_weeks = math.ceil(total_days / days_per_week)
         days = list(all_days)
@@ -302,16 +307,34 @@ class DutyScheduler:
                     for shift in range(day_obj.ppl):
                         shifts_in_week.append(
                             assignments[(ra, day_obj, shift)])
+                # Define an integer variable to hold the total count of shifts in the week
+                week_shift_count = model.NewIntVar(0, len(shifts_in_week), f'week_shift_count_{ra.name}_{week}')
+        
+                # Create a constraint to sum shifts
+                model.Add(week_shift_count == sum(shifts_in_week))
+                penalty_var = model.NewBoolVar(f'too_many_shifts_week{week}')
+                model.Add(week_shift_count <= 2).OnlyEnforceIf(penalty_var.Not())
+                model.Add(week_shift_count > 2).OnlyEnforceIf(penalty_var)
+                penalty_terms.append(penalty_var * too_many_shifts_penalty)
 
-                # Penalty variable if more than 2 shifts are assigned in this week
-                overwork_penalty = model.NewBoolVar(
-                    f'overwork_ra{ra}_week{week}')
-                model.Add(sum(shifts_in_week) <= 2 + (5 * overwork_penalty))
-                # Add the penalty variable to the list of penalties
-                penalties.append(overwork_penalty)
+        # penalize if an RA is on consecutive days
+        consecutive_days_penalty = 4
+        for ra in all_ras: 
+            for day_idx in range(len(all_days) - 1):
+                cur_day = days[day_idx]
+                next_day = days[day_idx + 1]
 
+                shifts_today = [assignments[ra, cur_day, shift] for shift in range(cur_day.ppl)]
+                shifts_tomorrow = [assignments[ra, next_day, shift] for shift in range(next_day.ppl)]
+                sum_shifts_today = sum(shifts_today)
+                sum_shifts_tomorrow = sum(shifts_tomorrow)
+                penalty_var = model.NewBoolVar(f'consecutive_shifts_{cur_day.date}_{next_day.date}')
+                model.Add(sum_shifts_today + sum_shifts_tomorrow < 2).OnlyEnforceIf(penalty_var.Not())
+                model.Add(sum_shifts_today + sum_shifts_tomorrow >= 2).OnlyEnforceIf(penalty_var)
+                penalty_terms.append(penalty_var * consecutive_days_penalty)
+                
         # Minimize the total penalties
-        model.Minimize(sum(penalties))
+        model.Minimize(sum(penalty_terms))
 
         solver = cp_model.CpSolver()
         status = solver.solve(model)
