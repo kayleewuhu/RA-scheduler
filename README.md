@@ -5,4 +5,4 @@ create a new Google Spreadsheet that displays who is on which shifts, abiding by
 
 ### Files
 - constants.py: contains the constants and enums utilized in the program
--   at the bottom of the file
+  - at the bottom of the file
