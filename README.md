@@ -24,5 +24,8 @@ create a new Google Spreadsheet that displays who is on which shifts, abiding by
   - class SpreadsheetClient: contains logic for reading, creating, and editing Google Spreadsheets (uses Google's Spreadsheet API)
 
 ### How to run the program
-
+- You must have python3 installed.
+- You will also need to install google or-tools by running the command
+  `pip install or-tools`
+- 
       
