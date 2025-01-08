@@ -22,4 +22,7 @@ create a new Google Spreadsheet that displays who is on which shifts, abiding by
   - class ScheduleDay: an object that represents the duty shift of a specific day (Day, who is on duty)
 - spreadsheet_client.py: contains all logic regarding Google SpreadSheet manipulation
   - class SpreadsheetClient: contains logic for reading, creating, and editing Google Spreadsheets (uses Google's Spreadsheet API)
+
+### How to run the program
+
       
