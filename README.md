@@ -31,9 +31,9 @@ create a new Google Spreadsheet that displays who is on which shifts, abiding by
 - You will also need a `credentials.json` file with Google Oauth 2.0 client credentials. This is required as the program uses Google Spreadsheets API and needs the user
   to authenticate and login to their google account. You can get these credentials by going to the Google API Console and creating your own.
 - You will need the questions and responses from a Google form that was filled out by every single person on the staff regarding their availabilities. Here are the questions to be asked in the form (notes are in bolded and italicized and are not to be included in the actual form):
-  - Preferred name ***(how the individual's name will appear in the final schedule)***
+  - Preferred name ***(how the individual's name will appear in the final schedule)***  
     ![image](https://github.com/user-attachments/assets/71d2c09d-cef2-4c0e-9a67-8cac6e3700da)
-  - Move in date? ***(when the individual moves in, so the scheduler does not schedule any shifts before that date...ensure this is in date format)***
+  - Move in date? ***(when the individual moves in, so the scheduler does not schedule any shifts before that date...ensure this is in date format)***  
     ![image](https://github.com/user-attachments/assets/6e5b1da1-2692-4d07-88b9-5f5e2d956d2d)
   - Returning RA or new RA? ***(brand new RAs will not be scheduled for the first 2 weeks in order to account for their training)***
   - Have you been an RA in this community previously? ***(RAs that are new to this community will not be scheduled for the first week to account for training)***
