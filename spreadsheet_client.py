@@ -7,7 +7,6 @@ from ra_models import RaAvailability, Ra
 from schedule_models import ScheduleDay
 from datetime import datetime, date
 from constants import DaysOfWeek, Distribution, CONSTANTS
-import json
 
 # Define the scope for Sheets API
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']

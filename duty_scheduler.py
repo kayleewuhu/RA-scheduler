@@ -1,5 +1,6 @@
 from datetime import datetime, date, timedelta
 import math
+import sys
 from ra_models import DaysOfWeek, Holidays
 from ortools.sat.python import cp_model
 from schedule_models import Day, ScheduleDay
@@ -249,7 +250,7 @@ class DutyScheduler:
 
         # new RAs cannot be on duty for the first 3 weeks (to account for shadow shifts)
         # new RAs to the community (but returners) cannot be on duty for the first 1.5 weeks
-        for day_idx, day in zip(range(21), all_days):
+        for day_idx, day in zip(range(14), all_days):
             for ra in all_ras:
                 if not ra.returner or (not ra.community_returner and day_idx <= 11):
                     for shift in range(day.ppl):
@@ -362,4 +363,5 @@ class DutyScheduler:
             print(solver.objective_value)
         else:
             print('No solution found')
+            sys.exit(0);
         return schedule, all_ras

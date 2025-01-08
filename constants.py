@@ -36,7 +36,6 @@ class Constants:
     PPL_PER_SHIFT_WEEKDAY: int
     PPL_PER_SHIFT_WEEKEND: int
 
-
 # Initialize the constant
 # user_value = input('Enter a value for the constant: ')
 CONSTANTS = Constants(2, 2)
